@@ -392,6 +392,8 @@ int background_functions(
   double rho_m;
   /* background ncdm quantities */
   double rho_ncdm,p_ncdm,pseudo_p_ncdm;
+  /* background mdm quantities */
+  double R0;
   /* index for n_ncdm species */
   int n_ncdm;
   /* fluid's time-dependent equation of state parameter */
@@ -448,6 +450,16 @@ int background_functions(
     rho_tot += pvecback[pba->index_bg_rho_idm];
     p_tot += 0.;
     rho_m += pvecback[pba->index_bg_rho_idm];
+  }
+
+  /* mdm */
+  if (pba->has_mdm == _TRUE_) {
+    R0 = pow(pba->Omega0_fld/pba->Omega0_mdm,2);
+    pvecback[pba->index_bg_rho_mdm] = pba->Omega0_mdm * pow(pba->H0,2) / pow(a,3) * exp(4.*pba->lambda0*pow(1.+R0,1.5)/3./sqrt(R0)*(sqrt(R0/(1.+R0))-a*sqrt(a*R0/(1.+pow(a,3)*R0))-asinh(sqrt(R0))+asinh(a*sqrt(a*R0))));
+    rho_tot += pvecback[pba->index_bg_rho_mdm];
+    p_tot += -2./3.*pba->lambda0*R0*pow(pow(a,3)*(1.+R0)/(1.+pow(a,3)*R0),1.5) * pvecback[pba->index_bg_rho_mdm];
+    dp_dloga += -(0.5-1.5*R0*pow(a,3)/(1.+R0*pow(a,3))-2./3.*pba->lambda0*sqrt(pow(a*(1.+R0)/(1.+pow(a,3)*R0),3))) *2*pba->lambda0*R0*pow(pow(a,3)*(1.+R0)/(1.+pow(a,3)*R0),1.5) * pvecback[pba->index_bg_rho_mdm];
+    rho_m += pvecback[pba->index_bg_rho_mdm];
   }
 
   /* dcdm */
@@ -673,6 +685,7 @@ int background_w_fld(
   double dOmega_ede_over_da = 0.;
   double d2Omega_ede_over_da2 = 0.;
   double a_eq, Omega_r, Omega_m;
+  double R0;
 
   /** - first, define the function w(a) */
   switch (pba->fluid_equation_of_state) {
@@ -695,12 +708,17 @@ int background_w_fld(
     Omega_m = pba->Omega0_b;
     if (pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
     if (pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
+    if (pba->has_mdm == _TRUE_) Omega_m += pba->Omega0_mdm;
     if (pba->has_dcdm == _TRUE_)
       class_stop(pba->error_message,"Early Dark Energy not compatible with decaying Dark Matter because we omitted to code the calculation of a_eq in that case, but it would not be difficult to add it if necessary, should be a matter of 5 minutes");
     a_eq = Omega_r/Omega_m; // assumes a flat universe with a=1 today
 
     // w_ede(a) taken from eq. (11) in 1706.00730
     *w_fld = - dOmega_ede_over_da*a/Omega_ede/3./(1.-Omega_ede)+a_eq/3./(a+a_eq);
+    break;
+  case MDE:
+    R0 = pow(pba->Omega0_fld/pba->Omega0_mdm,2);
+    *w_fld = -1. + 2./3.*pba->lambda0*pow(a*(1.+R0)/(1+pow(a,3)*R0),1.5);
     break;
   }
 
@@ -721,6 +739,10 @@ int background_w_fld(
       + dOmega_ede_over_da*dOmega_ede_over_da*a/3./(1.-Omega_ede)/(1.-Omega_ede)/Omega_ede
       + a_eq/3./(a+a_eq)/(a+a_eq);
     break;
+  case MDE:
+    R0 = pow(pba->Omega0_fld/pba->Omega0_mdm,2);
+    *dw_over_da_fld = pba->lambda0*(1.-2.*pow(a,3)*R0)*sqrt(a*pow(1.+R0,3)/pow((1.+pow(a,3)*R0),5));
+    break;
   }
 
   /** - finally, give the analytic solution of the following integral:
@@ -739,6 +761,10 @@ int background_w_fld(
     break;
   case EDE:
     class_stop(pba->error_message,"EDE implementation not finished: to finish it, read the comments in background.c just before this line\n");
+    break;
+  case MDE:
+    R0 = pow(pba->Omega0_fld/pba->Omega0_mdm,2);
+    *integral_fld = 4./3.*pba->lambda0*(1.+R0-sqrt(pow(a*(1.+R0),3)/(1+pow(a,3)*R0)));
     break;
   }
 
@@ -977,6 +1003,7 @@ int background_indices(
 
   pba->has_cdm = _FALSE_;
   pba->has_idm = _FALSE_;
+  pba->has_mdm = _FALSE_;
   pba->has_ncdm = _FALSE_;
   pba->has_dcdm = _FALSE_;
   pba->has_dr = _FALSE_;
@@ -993,6 +1020,9 @@ int background_indices(
 
   if (pba->Omega0_idm != 0.)
     pba->has_idm = _TRUE_;
+
+  if (pba->Omega0_mdm != 0.)
+    pba->has_mdm = _TRUE_;
 
   if (pba->Omega0_ncdm_tot != 0.)
     pba->has_ncdm = _TRUE_;
@@ -1049,6 +1079,9 @@ int background_indices(
 
   /* - index for rho_idm  */
   class_define_index(pba->index_bg_rho_idm,pba->has_idm,index_bg,1);
+
+  /* - index for rho_mdm */
+  class_define_index(pba->index_bg_rho_mdm,pba->has_mdm,index_bg,1);
 
   /* - indices for ncdm. We only define the indices for ncdm1
      (density, pressure, pseudo-pressure), the other ncdm indices
@@ -2102,6 +2135,8 @@ int background_solve(
     pba->Omega0_nfsm += pba->Omega0_idm;
   if (pba->has_dcdm == _TRUE_)
     pba->Omega0_nfsm += pba->Omega0_dcdm;
+  if (pba->has_mdm == _TRUE_)
+    pba->Omega0_nfsm += pba->Omega0_mdm;
   for (n_ncdm=0;n_ncdm<pba->N_ncdm; n_ncdm++) {
     /* here we define non-free-streaming matter as: any non-relatistic species with a dimensionless ratio m/T bigger than a threshold ppr->M_nfsm_threshold; if this threshold is of the order of 10^4, this corresponds to the condition "becoming non-relativistic during radiation domination". Beware: this definition won't work in the case in which the user passes a customised p.s.d. for ncdm, such that M_ncdm is not defined.  */
     if (pba->M_ncdm[n_ncdm] > ppr->M_nfsm_threshold) {
@@ -2441,6 +2476,7 @@ int background_output_titles(
   class_store_columntitle(titles,"(.)rho_b",_TRUE_);
   class_store_columntitle(titles,"(.)rho_cdm",pba->has_cdm);
   class_store_columntitle(titles,"(.)rho_idm",pba->has_idm);
+  class_store_columntitle(titles,"(.)rho_mdm",pba->has_mdm);
   if (pba->has_ncdm == _TRUE_) {
     for (n=0; n<pba->N_ncdm; n++) {
       class_sprintf(tmp,"(.)rho_ncdm[%d]",n);
@@ -2516,6 +2552,7 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_rho_b],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_cdm],pba->has_cdm,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_idm],pba->has_idm,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_rho_mdm],pba->has_mdm,storeidx);
     if (pba->has_ncdm == _TRUE_) {
       for (n=0; n<pba->N_ncdm; n++) {
         class_store_double(dataptr,pvecback[pba->index_bg_rho_ncdm1+n],_TRUE_,storeidx);
@@ -2634,6 +2671,9 @@ int background_derivs(
   }
   if (pba->has_idm == _TRUE_){
     rho_M += pvecback[pba->index_bg_rho_idm];
+  }
+  if (pba->has_mdm == _TRUE_){
+    rho_M += pvecback[pba->index_bg_rho_mdm];
   }
 
   dy[pba->index_bi_D] = y[pba->index_bi_D_prime]/a/H;
@@ -2805,6 +2845,10 @@ int background_output_budget(
     if (pba->has_idm == _TRUE_){
       class_print_species("Interacting DM - idr,b,g",idm);
       budget_matter+=pba->Omega0_idm;
+    }
+    if (pba->has_mdm == _TRUE_){
+      class_print_species("Non-canon DM (Mishra2021)",mdm);
+      budget_matter+=pba->Omega0_mdm;
     }
     if (pba->has_dcdm == _TRUE_) {
       class_print_species("Decaying Cold Dark Matter",dcdm);
