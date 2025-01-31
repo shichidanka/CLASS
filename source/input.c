@@ -1196,7 +1196,7 @@ int input_get_guess(double *xguess,
       dxdy[index_guess] = 1.;
       break;
     case Omega_dcdmdr:
-      Omega_M = ba.Omega0_cdm+ba.Omega0_idm+ba.Omega0_dcdmdr+ba.Omega0_b;
+      Omega_M = ba.Omega0_cdm+ba.Omega0_idm+ba.Omega0_mdm+ba.Omega0_dcdmdr+ba.Omega0_b;
       /* *
        * This formula is exact in a Matter + Lambda Universe, but only for Omega_dcdm,
        * not the combined.
@@ -1215,7 +1215,7 @@ int input_get_guess(double *xguess,
       dxdy[index_guess] = 1./a_decay;
       break;
     case omega_dcdmdr:
-      Omega_M = ba.Omega0_cdm+ba.Omega0_idm+ba.Omega0_dcdmdr+ba.Omega0_b;
+      Omega_M = ba.Omega0_cdm+ba.Omega0_idm+ba.Omega0_mdm+ba.Omega0_dcdmdr+ba.Omega0_b;
       gamma = ba.Gamma_dcdm/ba.H0;
       if (gamma < 1)
         a_decay = 1.0;
@@ -3165,6 +3165,19 @@ int input_read_parameters_species(struct file_content * pfc,
     pba->Omega0_cdm = ppr->Omega0_cdm_min_synchronous;
   }
 
+
+  /** 7.4) Mishra dark matter (mdm) */
+  class_call(parser_read_double(pfc,"Omega_mdm",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_)
+    pba->Omega0_mdm = param1;
+
+  if (pba->Omega0_mdm > 0.){
+    class_read_double("lambda0",pba->lambda0);
+  }
+
   /* At this point all the species should be set, and used for the budget equation below */
 
   /** 8) Dark energy
@@ -3203,6 +3216,7 @@ int input_read_parameters_species(struct file_content * pfc,
   Omega_tot += pba->Omega0_ur;
   Omega_tot += pba->Omega0_cdm;
   Omega_tot += pba->Omega0_idm;
+  Omega_tot += pba->Omega0_mdm;
   Omega_tot += pba->Omega0_dcdmdr;
   Omega_tot += pba->Omega0_idr;
   Omega_tot += pba->Omega0_ncdm_tot;
@@ -3274,6 +3288,9 @@ int input_read_parameters_species(struct file_content * pfc,
       else if ((strstr(string1,"EDE") != NULL) || (strstr(string1,"ede") != NULL)) {
         pba->fluid_equation_of_state = EDE;
       }
+      else if ((strstr(string1,"MDE") != NULL) || (strstr(string1,"mde") != NULL)) {
+        pba->fluid_equation_of_state = MDE;
+      }
       else {
         class_stop(errmsg,"incomprehensible input '%s' for the field 'fluid_equation_of_state'",string1);
       }
@@ -3291,6 +3308,12 @@ int input_read_parameters_species(struct file_content * pfc,
       /* Read */
       class_read_double("w0_fld",pba->w0_fld);
       class_read_double("Omega_EDE",pba->Omega_EDE);
+      class_read_double("cs2_fld",pba->cs2_fld);
+    }
+    if (pba->fluid_equation_of_state == MDE) {
+      /** 8.a.2.4) Equation of state of the fluid in 'MDE' case */
+      /* Read */
+      class_read_double("lambda0",pba->lambda0);
       class_read_double("cs2_fld",pba->cs2_fld);
     }
   }
@@ -5827,6 +5850,8 @@ int input_default_params(struct background *pba,
   pth->n_index_idm_g = 0;
   ppt->has_idm_soundspeed = _FALSE_;
 
+  /** 7.4) Mishra dark matter (mdm) */
+  pba->Omega0_mdm = 0.;
   /* ** ADDITIONAL SPECIES ** */
 
   /** 9) Dark energy contributions */
@@ -5845,6 +5870,8 @@ int input_default_params(struct background *pba,
   pba->wa_fld = 0.;
   /** 9.a.2.2) 'EDE' case */
   pba->Omega_EDE = 0.;
+  /** 9.a.2.3) 'MDE' case */
+  pba->lambda0 = 0.;
   /** 9.b) Omega scalar field */
   /** 9.b.1) Potential parameters and initial conditions */
   pba->scf_parameters = NULL;
