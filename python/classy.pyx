@@ -3215,6 +3215,9 @@ make        nonlinear_scale_cb(z, z_size)
         if self.pt.has_source_delta_idm:
             indices.append(self.pt.index_tp_delta_idm)
             names.append("delta_idm")
+        if self.pt.has_source_delta_mdm:
+            indices.append(self.pt.index_tp_delta_mdm)
+            names.append("delta_mdm")
         if self.pt.has_source_delta_dcdm:
             indices.append(self.pt.index_tp_delta_dcdm)
             names.append("delta_dcdm")
@@ -3258,6 +3261,9 @@ make        nonlinear_scale_cb(z, z_size)
         if self.pt.has_source_theta_idm:
             indices.append(self.pt.index_tp_theta_idm)
             names.append("theta_idm")
+        if self.pt.has_source_theta_mdm:
+            indices.append(self.pt.index_tp_theta_mdm)
+            names.append("theta_mdm")
         if self.pt.has_source_theta_dcdm:
             indices.append(self.pt.index_tp_theta_dcdm)
             names.append("theta_dcdm")
