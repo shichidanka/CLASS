@@ -85,6 +85,7 @@ cdef extern from "class.h":
         double T_idr
         double Omega0_cdm
         double Omega0_idm
+        double Omega0_mdm
         double Omega0_dcdm
         double Omega0_ncdm_tot
         double Omega0_lambda
@@ -105,6 +106,7 @@ cdef extern from "class.h":
         double H_eq
         double z_eq
         double tau_eq
+        double lambda0
 
     cdef struct thermodynamics:
         short is_allocated
@@ -188,6 +190,7 @@ cdef extern from "class.h":
         short has_source_delta_b
         short has_source_delta_cdm
         short has_source_delta_idm
+        short has_source_delta_mdm
         short has_source_delta_idr
         short has_source_delta_dcdm
         short has_source_delta_fld
@@ -202,6 +205,7 @@ cdef extern from "class.h":
         short has_source_theta_b
         short has_source_theta_cdm
         short has_source_theta_idm
+        short has_source_theta_mdm
         short has_source_theta_idr
         short has_source_theta_dcdm
         short has_source_theta_fld
@@ -231,6 +235,7 @@ cdef extern from "class.h":
         int index_tp_delta_b
         int index_tp_delta_cdm
         int index_tp_delta_idm
+        int index_tp_delta_mdm
         int index_tp_delta_dcdm
         int index_tp_delta_fld
         int index_tp_delta_scf
@@ -251,6 +256,7 @@ cdef extern from "class.h":
         int index_tp_theta_ur
         int index_tp_theta_idr
         int index_tp_theta_idm
+        int index_tp_theta_mdm
         int index_tp_theta_dr
         int index_tp_theta_ncdm1
 
