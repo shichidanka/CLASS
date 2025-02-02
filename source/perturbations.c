@@ -6782,7 +6782,7 @@ int perturbations_total_stress_energy(
   double X, Y, Z, X_prime, Y_prime, Z_prime;
   double Gamma_fld, S, S_prime, theta_t, theta_t_prime, rho_plus_p_theta_fld_prime;
   double delta_p_b_over_rho_b;
-  double R0, w_mdm, alpha_mdm;
+  double R0, w_mdm;
 
   /** - wavenumber and scale factor related quantities */
 
@@ -8797,7 +8797,7 @@ int perturbations_derivs(double tau,
   /* for use with dcdm and dr */
   double f_dr, fprime_dr;
 
-  double R0, w_mdm, alpha_mdm, ca2_mdm;
+  double R0, w_mdm, ca2_mdm;
 
   /** - rename the fields of the input structure (just to avoid heavy notations) */
 
