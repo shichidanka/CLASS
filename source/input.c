@@ -1248,7 +1248,7 @@ int input_get_guess(double *xguess,
       /* This works since correspondence is Omega_ini_dcdm -> Omega_dcdmdr and
          omega_ini_dcdm -> omega_dcdmdr */
       Omega0_dcdmdr *=pfzw->target_value[index_guess];
-      Omega_M = ba.Omega0_cdm+ba.Omega0_idm+Omega0_dcdmdr+ba.Omega0_b;
+      Omega_M = ba.Omega0_cdm+ba.Omega0_idm+ba.Omega0_mdm+Omega0_dcdmdr+ba.Omega0_b;
       gamma = ba.Gamma_dcdm/ba.H0;
       if (gamma < 1)
         a_decay = 1.0;
@@ -3313,7 +3313,6 @@ int input_read_parameters_species(struct file_content * pfc,
     if (pba->fluid_equation_of_state == MDE) {
       /** 8.a.2.4) Equation of state of the fluid in 'MDE' case */
       /* Read */
-      class_read_double("lambda0",pba->lambda0);
       class_read_double("cs2_fld",pba->cs2_fld);
     }
   }
